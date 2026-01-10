@@ -463,29 +463,30 @@
     </section>
 
     <!-- Zoom Parallax Section -->
-    <section class="zoom-section relative h-[200vh] bg-[#050505]">
-        <div class="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+    <section class="zoom-section relative h-[100vh] bg-[#050505] overflow-hidden">
+        <div class="h-screen w-full flex items-center justify-center relative">
             <!-- Zoom Image -->
             <div class="zoom-image-container absolute inset-0 w-full h-full">
                 <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=2574&auto=format&fit=crop"
-                    class="w-full h-full object-cover opacity-40" alt="Zoom Background">
+                    class="w-full h-full object-cover opacity-40 will-change-transform" alt="Zoom Background">
             </div>
 
             <!-- Center Text -->
             <div class="relative z-10 text-center mix-blend-overlay">
-                <h2 class="text-[12vw] font-display font-bold uppercase leading-none text-white zoom-text">
+                <h2
+                    class="text-[12vw] font-display font-bold uppercase leading-none text-white zoom-text will-change-transform">
                     VISUAL<br>STORIES
                 </h2>
             </div>
 
             <!-- Floating Elements -->
             <div
-                class="absolute top-[20%] left-[10%] w-[20vw] h-[30vh] bg-gray-900 rotate-[-6deg] z-20 zoom-card opacity-0 border border-white/10 shadow-2xl">
+                class="absolute top-[20%] left-[10%] w-[20vw] h-[30vh] bg-gray-900 rotate-[-6deg] z-20 zoom-card opacity-0 border border-white/10 shadow-2xl will-change-transform">
                 <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=2576&auto=format&fit=crop"
                     class="w-full h-full object-cover" alt="Story 1">
             </div>
             <div
-                class="absolute bottom-[20%] right-[15%] w-[20vw] h-[30vw] z-20 zoom-card opacity-0 border border-white/20 bg-black">
+                class="absolute bottom-[20%] right-[15%] w-[20vw] h-[30vw] z-20 zoom-card opacity-0 border border-white/20 bg-black will-change-transform">
                 <img src="https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?q=80&w=800"
                     class="w-full h-full object-cover" alt="Story 2">
             </div>
@@ -778,35 +779,40 @@
                 });
             }
 
-            // Zoom Parallax Section
+            // Zoom Parallax Section - UPDATED
             let zoomTl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: ".zoom-section",
+                    trigger: ".zoom-section", // Pin the container
                     start: "top top",
-                    end: "+=2000",
+                    end: "+=1500", // Adjusted length
                     scrub: true,
-                    pin: true
+                    pin: true,
+                    anticipatePin: 1
                 }
             });
 
+            // Use force3D to prevent flickering
             zoomTl.to(".zoom-image-container img", {
-                scale: 1.5,
+                scale: 1.3,
                 opacity: 0.2,
-                ease: "none"
+                ease: "none",
+                force3D: true
             })
                 .to(".zoom-text", {
-                    scale: 2,
+                    scale: 1.8,
                     opacity: 0,
-                    ease: "power2.in"
+                    ease: "power2.in",
+                    force3D: true
                 }, "<")
                 .to(".zoom-card", {
                     opacity: 1,
-                    y: -100,
-                    stagger: 0.1,
+                    y: -80,
+                    stagger: 0.15,
                     rotate: 0,
-                    duration: 1,
-                    ease: "power3.out"
-                }, "-=0.5");
+                    duration: 0.8,
+                    ease: "power2.out",
+                    force3D: true
+                }, "-=0.4");
 
             // Footer Parallax
             gsap.from("footer h2", {
