@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050505">
+    <meta name="description" content="AJIO LUXE - The Ultimate Luxury Fashion Experience">
+    <title>AJIO LUXE - The Ultimate Fashion Experience</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3163/3163158.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.29/dist/lenis.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Oswald:wght@300;400;500;700&family=Italiana&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Jost', 'sans-serif'],
+                        display: ['Oswald', 'sans-serif'],
+                        serif: ['Italiana', 'serif'],
+                    },
+                    colors: {
+                        ajio: {
+                            black: '#050505',
+                            gold: '#C5A059',
+                            dark: '#0a0a0a',
+                            gray: '#1f1f1f'
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            overflow-x: hidden;
+            cursor: none;
+            opacity: 0;
+            /* Starts hidden, revealed by JS to prevent FOUC */
+            transition: opacity 0.5s ease;
+        }
+
+        body.loaded {
+            opacity: 1;
+        }
+
+        /* Hide Scrollbar */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* Cinematic Grain Overlay */
+        .grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Cursor */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1),
+                height 0.3s cubic-bezier(0.19, 1, 0.22, 1),
+                background-color 0.3s;
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 1s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        /* Text Effects */
+        .hero-text-stroke {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+            color: transparent;
+            transition: all 0.5s ease;
+        }
+
+        .hero-text-stroke:hover {
+            -webkit-text-stroke: 1px #C5A059;
+            color: rgba(197, 160, 89, 0.1);
+            letter-spacing: 0.05em;
+        }
+
+        /* Image Hover Effects */
+        .category-card .img-wrapper {
+            overflow: hidden;
+        }
+
+        .category-card img {
+            transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .category-card:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Navbar Link Highlight */
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0%;
+            height: 1px;
+            background: #C5A059;
+            transition: width 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Carousel Images */
+        .hero-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1.5s ease-in-out, visibility 1.5s;
+            z-index: 0;
+        }
+
+        .hero-slide.active {
+            opacity: 0.7;
+            visibility: visible;
+        }
+
+        .hero-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.1);
+        }
+
+        /* Utility */
+        .clip-text-image {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: url('https://images.unsplash.com/photo-1550614000-4b9519e099b2?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Cinematic Grain -->
+    <div class="grain"></div>
+
+    <!-- Loader -->
+    <div class="loader flex-col gap-4" id="loader">
+        <div class="overflow-hidden">
+            <h1
+                class="text-7xl md:text-9xl font-display font-bold tracking-tighter text-white reveal-text translate-y-[100%]">
+                AJIO</h1>
+        </div>
+        <div class="overflow-hidden">
+            <h1 class="text-xl md:text-3xl font-serif italic text-ajio-gold reveal-text translate-y-[100%]">Luxe Edition
+            </h1>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center transition-all duration-500 mix-blend-difference text-white"
+        id="navbar">
+        <div class="flex items-center gap-12">
+            <a href="#"
+                class="text-4xl font-display font-bold tracking-tighter hover:text-ajio-gold transition-colors">AJIO.</a>
+            <div class="hidden md:flex gap-8 text-xs font-bold uppercase tracking-[0.2em]">
+                <a href="#men" class="nav-link relative hover:text-ajio-gold transition-colors">Men</a>
+                <a href="#women" class="nav-link relative hover:text-ajio-gold transition-colors">Women</a>
+                <a href="#editorial" class="nav-link relative hover:text-ajio-gold transition-colors">Editorial</a>
+                <a href="#collections" class="nav-link relative hover:text-ajio-gold transition-colors">Runway</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-8">
+            <div class="hidden md:block relative group">
+                <input type="text" placeholder="SEARCH"
+                    class="bg-transparent border-b border-white/30 focus:border-ajio-gold outline-none px-2 py-1 w-24 focus:w-48 text-xs font-bold tracking-widest transition-all text-white placeholder-white/50 uppercase">
+            </div>
+            <button class="hover:text-ajio-gold transition-colors group">
+                <i data-lucide="shopping-bag" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+            </button>
+            <button class="md:hidden">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative w-full h-screen overflow-hidden flex items-center justify-center bg-[#050505]">
+
+        <!-- Slides -->
+        <div class="hero-slide active">
+            <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=2400&auto=format&fit=crop"
+                class="ken-burns" alt="Fashion 1">
+        </div>
+        <div class="hero-slide">
+            <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=2400&auto=format&fit=crop"
+                class="ken-burns" alt="Fashion 2">
+        </div>
+        <div class="hero-slide">
+            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2400&auto=format&fit=crop"
+                class="ken-burns" alt="Fashion 3">
+        </div>
+
+        <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-[#050505] z-10"></div>
+
+        <div class="relative z-20 w-full px-6 md:px-20 flex flex-col justify-end h-full pb-32">
+            <div class="overflow-hidden mb-2">
+                <h2 class="text-ajio-gold uppercase tracking-[0.5em] text-xs font-bold hero-subtitle translate-y-full">
+                    Spring / Summer 2025</h2>
+            </div>
+
+            <h1
+                class="font-display font-bold text-[15vw] leading-[0.85] uppercase tracking-tighter mix-blend-overlay opacity-90 hero-title">
+                <div class="overflow-hidden"><span class="block translate-y-full">Vogue</span></div>
+                <div class="overflow-hidden"><span
+                        class="block translate-y-full text-transparent hero-text-stroke">Reborn</span></div>
+            </h1>
+
+            <div
+                class="flex flex-col md:flex-row justify-between items-end mt-12 border-t border-white/20 pt-8 hero-footer opacity-0">
+                <p class="max-w-md text-gray-400 font-light text-sm leading-relaxed">
+                    Curated luxury from the world's finest ateliers. Experience the new standard of online retail with
+                    AJIO Luxe.
+                </p>
+                <div class="flex gap-6 mt-8 md:mt-0">
+                    <a href="#collections"
+                        class="group flex items-center gap-3 text-sm font-bold uppercase tracking-widest hover:text-ajio-gold transition-colors">
+                        Explore Collection
+                        <div class="w-12 h-[1px] bg-white group-hover:bg-ajio-gold transition-colors"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Infinite Marquee -->
+    <section class="py-6 border-y border-white/5 bg-[#050505] overflow-hidden relative z-20">
+        <div class="brand-scroller flex w-full whitespace-nowrap">
+            <div
+                class="marquee-content flex gap-24 items-center text-8xl font-display font-bold text-[#1a1a1a] uppercase tracking-tighter px-4 select-none">
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Gucci</span>
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Prada</span>
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Balenciaga</span>
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Versace</span>
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Burberry</span>
+                <span class="hover:text-white transition-colors duration-500 cursor-pointer">Dior</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Horizontal Scroll Editorial -->
+    <section id="editorial" class="h-screen bg-[#e5e5e5] text-black relative flex items-center overflow-hidden">
+        <div class="horizontal-scroll-container flex items-center h-full pl-6 md:pl-24 gap-12 md:gap-32 w-[400vw]">
+
+            <!-- Intro Text -->
+            <div class="w-[80vw] md:w-[40vw] flex-shrink-0 pr-12">
+                <h3 class="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-ajio-gold">The Edit</h3>
+                <h2 class="text-7xl md:text-9xl font-display font-bold leading-[0.9] mb-8">URBAN<br>LEGACY</h2>
+                <p class="text-lg md:text-xl font-serif italic text-gray-600 max-w-md">"Fashion is the armor to survive
+                    the reality of everyday life."</p>
+                <div class="flex items-center gap-4 mt-12">
+                    <div class="w-16 h-[2px] bg-black"></div>
+                    <span class="uppercase tracking-widest text-xs font-bold">Scroll to Discover</span>
+                </div>
+            </div>
+
+            <!-- Card 1 -->
+            <div class="w-[80vw] md:w-[25vw] h-[70vh] flex-shrink-0 relative group cursor-pointer">
+                <div class="w-full h-full overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=1200&auto=format&fit=crop"
+                        class="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                        alt="Look 1">
+                </div>
+                <div class="absolute -bottom-12 left-0">
+                    <span class="text-xs font-bold uppercase tracking-widest block mb-1">01</span>
+                    <h4 class="text-4xl font-display font-bold">Noir Coat</h4>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="w-[80vw] md:w-[25vw] h-[70vh] flex-shrink-0 relative group cursor-pointer">
+                <div class="w-full h-full overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1575305024227-2c9bd4b14d29?q=80&w=1200&auto=format&fit=crop"
+                        class="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                        alt="Look 2">
+                </div>
+                <div class="absolute -bottom-12 left-0">
+                    <span class="text-xs font-bold uppercase tracking-widest block mb-1">02</span>
+                    <h4 class="text-4xl font-display font-bold">Silk & Stone</h4>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="w-[80vw] md:w-[25vw] h-[70vh] flex-shrink-0 relative group cursor-pointer">
+                <div class="w-full h-full overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=1200"
+                        class="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                        alt="Look 3">
+                </div>
+                <div class="absolute -bottom-12 left-0">
+                    <span class="text-xs font-bold uppercase tracking-widest block mb-1">03</span>
+                    <h4 class="text-4xl font-display font-bold">Street Avant</h4>
+                </div>
+            </div>
+
+            <!-- Spacer -->
+            <div class="w-[10vw] flex-shrink-0"></div>
+        </div>
+    </section>
+
+    <!-- Collections Grid -->
+    <section id="collections" class="py-32 px-4 md:px-12 bg-[#050505]">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-24 px-4 border-b border-white/10 pb-8">
+            <div>
+                <h3 class="text-ajio-gold uppercase tracking-[0.2em] text-xs font-bold mb-4">Categories</h3>
+                <h2 class="text-5xl md:text-8xl font-display font-bold">Curated Finds</h2>
+            </div>
+            <div class="text-right mt-8 md:mt-0">
+                <p class="text-gray-400 text-sm max-w-xs ml-auto mb-4">Handpicked selections from the runway to your
+                    wardrobe.</p>
+                <a href="#"
+                    class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:text-ajio-gold transition-colors group">
+                    View All Categories <i data-lucide="arrow-right"
+                        class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <!-- Men (Large) -->
+            <div class="md:col-span-7 h-[600px] relative group category-card cursor-pointer">
+                <div class="img-wrapper w-full h-full">
+                    <img src="https://images.unsplash.com/photo-1516257984881-feed26371800?q=80&w=1600&auto=format&fit=crop"
+                        class="w-full h-full object-cover" alt="Men Fashion">
+                </div>
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500">
+                </div>
+                <div class="absolute bottom-8 left-8 mix-blend-difference">
+                    <h3 class="text-6xl font-display font-bold uppercase">Men</h3>
+                    <p
+                        class="text-sm tracking-widest uppercase mt-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                        Tailoring / Streetwear</p>
+                </div>
+            </div>
+
+            <!-- Women (Tall) -->
+            <div class="md:col-span-5 h-[600px] relative group category-card cursor-pointer">
+                <div class="img-wrapper w-full h-full">
+                    <img src="https://images.unsplash.com/photo-1503342394128-c104d54dba01?q=80&w=1600"
+                        class="w-full h-full object-cover" alt="Women Fashion">
+                </div>
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500">
+                </div>
+                <div class="absolute top-8 right-8 text-right mix-blend-difference">
+                    <h3 class="text-6xl font-display font-bold uppercase">Women</h3>
+                    <p
+                        class="text-sm tracking-widest uppercase mt-2 opacity-0 group-hover:opacity-100 transform -translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                        Couture / Ready-to-wear</p>
+                </div>
+            </div>
+
+            <!-- Accessories (Wide) -->
+            <div class="md:col-span-8 h-[400px] relative group category-card cursor-pointer">
+                <div class="img-wrapper w-full h-full">
+                    <img src="https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=1600"
+                        class="w-full h-full object-cover" alt="Shoes">
+                </div>
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500">
+                </div>
+                <div class="absolute bottom-8 left-8 mix-blend-difference">
+                    <h3 class="text-4xl font-display font-bold uppercase">Footwear</h3>
+                </div>
+            </div>
+
+            <!-- Kids (Box) -->
+            <div class="md:col-span-4 h-[400px] relative group category-card cursor-pointer">
+                <div class="img-wrapper w-full h-full">
+                    <img src="https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?q=80&w=1000"
+                        class="w-full h-full object-cover" alt="Kids">
+                </div>
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-500">
+                </div>
+                <div class="absolute bottom-8 left-8 mix-blend-difference">
+                    <h3 class="text-4xl font-display font-bold uppercase">Mini</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Zoom Parallax Section -->
+    <section class="zoom-section relative h-[200vh] bg-[#050505]">
+        <div class="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+            <!-- Zoom Image -->
+            <div class="zoom-image-container absolute inset-0 w-full h-full">
+                <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=2574&auto=format&fit=crop"
+                    class="w-full h-full object-cover opacity-40" alt="Zoom Background">
+            </div>
+
+            <!-- Center Text -->
+            <div class="relative z-10 text-center mix-blend-overlay">
+                <h2 class="text-[12vw] font-display font-bold uppercase leading-none text-white zoom-text">
+                    VISUAL<br>STORIES
+                </h2>
+            </div>
+
+            <!-- Floating Elements -->
+            <div
+                class="absolute top-[20%] left-[10%] w-[20vw] h-[30vh] bg-gray-900 rotate-[-6deg] z-20 zoom-card opacity-0 border border-white/10 shadow-2xl">
+                <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=2576&auto=format&fit=crop"
+                    class="w-full h-full object-cover" alt="Story 1">
+            </div>
+            <div
+                class="absolute bottom-[20%] right-[15%] w-[20vw] h-[30vw] z-20 zoom-card opacity-0 border border-white/20 bg-black">
+                <img src="https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?q=80&w=800"
+                    class="w-full h-full object-cover" alt="Story 2">
+            </div>
+        </div>
+    </section>
+
+    <!-- Clearance / Sale -->
+    <section class="py-32 bg-[#e5e5e5] text-black overflow-hidden">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <div class="relative z-10">
+                    <div class="inline-block border border-black px-4 py-1 mb-6 rounded-full">
+                        <span class="text-xs font-bold tracking-widest uppercase">Limited Time</span>
+                    </div>
+                    <h2 class="text-7xl md:text-9xl font-display font-bold mb-6 leading-[0.8]">WINTER<br><span
+                            class="text-transparent bg-clip-text bg-gradient-to-r from-black to-gray-500">SALE</span>
+                    </h2>
+                    <p class="text-xl text-gray-700 mb-10 max-w-md font-serif italic">"Style is a way to say who you are
+                        without having to speak."</p>
+                    <a href="#"
+                        class="px-10 py-4 bg-black text-white text-sm uppercase tracking-widest font-bold hover:bg-ajio-gold hover:text-black transition-all inline-block hover:scale-105 duration-300">
+                        Shop Clearance
+                    </a>
+                </div>
+                <div class="relative">
+                    <div class="absolute -top-12 -right-12 w-full h-full border-2 border-black/10 z-0"></div>
+                    <img src="https://images.unsplash.com/photo-1548767797-d8c844163c4c?q=80&w=1200"
+                        class="w-full h-[600px] object-cover relative z-10 grayscale hover:grayscale-0 transition-all duration-700"
+                        alt="Sale">
+                    <div
+                        class="absolute -bottom-6 -left-6 bg-red-600 text-white px-6 py-3 font-display font-bold text-xl z-20">
+                        -70% OFF
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#050505] text-white pt-32 pb-10 border-t border-white/10">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between mb-24">
+                <div>
+                    <h2
+                        class="text-[10vw] font-display font-bold leading-none tracking-tighter opacity-20 hover:opacity-100 transition-opacity duration-500 cursor-default">
+                        AJIO LUXE</h2>
+                </div>
+                <div class="flex flex-col justify-end text-right">
+                    <a href="#"
+                        class="text-2xl font-display uppercase font-bold hover:text-ajio-gold mb-2">Instagram</a>
+                    <a href="#" class="text-2xl font-display uppercase font-bold hover:text-ajio-gold mb-2">Twitter</a>
+                    <a href="#" class="text-2xl font-display uppercase font-bold hover:text-ajio-gold">Youtube</a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-12 border-t border-white/10 pt-12">
+                <div>
+                    <h4 class="font-bold uppercase tracking-widest mb-6 text-xs text-ajio-gold">Collections</h4>
+                    <ul class="space-y-4 text-gray-500 text-sm font-light">
+                        <li><a href="#" class="hover:text-white transition-colors">Men's Apparel</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Women's Apparel</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Kid's World</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Home & Kitchen</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold uppercase tracking-widest mb-6 text-xs text-ajio-gold">Customer Care</h4>
+                    <ul class="space-y-4 text-gray-500 text-sm font-light">
+                        <li><a href="#" class="hover:text-white transition-colors">Track Order</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Returns & Refunds</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Shipping Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="col-span-2">
+                    <h4 class="font-bold uppercase tracking-widest mb-6 text-xs text-ajio-gold">Newsletter</h4>
+                    <p class="text-gray-500 text-sm mb-6 max-w-xs">Be the first to know about new arrivals and exclusive
+                        offers.</p>
+                    <form class="flex border-b border-gray-700 pb-4 max-w-sm">
+                        <input type="email" placeholder="ENTER YOUR EMAIL"
+                            class="bg-transparent outline-none w-full text-sm text-white placeholder-gray-700 font-bold tracking-wider uppercase">
+                        <button
+                            class="text-white hover:text-ajio-gold uppercase text-xs font-bold tracking-widest">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+
+            <div
+                class="flex justify-between items-center mt-20 pt-8 border-t border-white/5 text-gray-600 text-[10px] uppercase tracking-widest font-bold">
+                <p>© 2026 AJIO Luxe Clone. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-white">Privacy Policy</a>
+                    <a href="#" class="hover:text-white">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('loaded');
+
+            // 0. Safety Force Load (In case Loader Hangs)
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                if (loader) {
+                    loader.style.transform = "translateY(-100%)";
+                    // Fallback to ensure GSAP scrolltrigger works if main TL failed
+                    ScrollTrigger.refresh();
+                }
+            }, 3000);
+
+            // 1. Initialize Lenis Smooth Scroll
+            // 1. Initialize Lenis Smooth Scroll
+            // Initialize Lenis
+            // Initialize Lenis
+            try {
+                const lenis = new Lenis({
+                    duration: 1.5,
+                    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                    direction: 'vertical',
+                    gestureDirection: 'vertical',
+                    smooth: true,
+                    mouseMultiplier: 1,
+                    smoothTouch: false,
+                    touchMultiplier: 2,
+                });
+
+                function raf(time) {
+                    lenis.raf(time);
+                    ScrollTrigger.update(); // Sync GSAP with Lenis
+                    requestAnimationFrame(raf);
+                }
+                requestAnimationFrame(raf);
+            } catch (e) {
+                console.log("Lenis Init Failed", e);
+            }
+
+            // 2. Initialize Icons
+            try {
+                lucide.createIcons();
+            } catch (e) { }
+
+            // 3. Custom Cursor Logic
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorOutline = document.querySelector('.cursor-outline');
+
+            if (window.matchMedia("(pointer: fine)").matches) {
+                window.addEventListener('mousemove', (e) => {
+                    const posX = e.clientX;
+                    const posY = e.clientY;
+
+                    // Dot follows instantly
+                    cursorDot.style.left = `${posX}px`;
+                    cursorDot.style.top = `${posY}px`;
+
+                    // Outline follows with lag/animation
+                    cursorOutline.animate({
+                        left: `${posX}px`,
+                        top: `${posY}px`
+                    }, { duration: 500, fill: "forwards" });
+                });
+
+                // Magnetic Hover Effect
+                const interactiveElements = document.querySelectorAll('a, button, .category-card, input, .cursor-pointer');
+                interactiveElements.forEach(el => {
+                    el.addEventListener('mouseenter', () => {
+                        cursorOutline.style.width = '80px';
+                        cursorOutline.style.height = '80px';
+                        cursorOutline.style.backgroundColor = '#fff';
+                        cursorOutline.style.mixBlendMode = 'difference';
+                    });
+                    el.addEventListener('mouseleave', () => {
+                        cursorOutline.style.width = '40px';
+                        cursorOutline.style.height = '40px';
+                        cursorOutline.style.backgroundColor = 'transparent';
+                        cursorOutline.style.mixBlendMode = 'difference';
+                    });
+                });
+            } else {
+                // Hide cursor on touch devices
+                cursorDot.style.display = 'none';
+                cursorOutline.style.display = 'none';
+            }
+
+            // 4. GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Loader Sequence
+            const tl = gsap.timeline();
+
+            tl.to('.reveal-text', {
+                y: 0,
+                duration: 1.2,
+                stagger: 0.2,
+                ease: "power4.out"
+            })
+                .to('.loader', {
+                    yPercent: -100,
+                    duration: 1.2,
+                    ease: "power4.inOut",
+                    delay: 0.2
+                })
+                .from('nav', {
+                    y: -100,
+                    opacity: 0,
+                    duration: 1
+                }, "-=0.8")
+                .to('.hero-title span', {
+                    y: 0,
+                    duration: 1.5,
+                    stagger: 0.1,
+                    ease: "power4.out"
+                }, "-=0.5")
+                .to('.hero-subtitle', {
+                    y: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                }, "-=1")
+                .to('.hero-footer', {
+                    opacity: 1,
+                    duration: 1
+                }, "-=1");
+
+            // Hero Carousel
+            const slides = document.querySelectorAll('.hero-slide');
+            if (slides.length > 0) {
+                let currentSlide = 0;
+
+                // Slight Ken Burns effect on scroll for active slide
+                gsap.to('.hero-slide.active img', {
+                    yPercent: 10,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: "header",
+                        start: "top top",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+
+                setInterval(() => {
+                    const nextSlide = (currentSlide + 1) % slides.length;
+
+                    // Outgoing
+                    slides[currentSlide].classList.remove('active');
+
+                    // Incoming
+                    slides[nextSlide].classList.add('active');
+
+                    // Reset scale for incoming
+                    gsap.fromTo(slides[nextSlide].querySelector('img'),
+                        { scale: 1.2 },
+                        { scale: 1, duration: 6, ease: "power1.out" }
+                    );
+
+                    currentSlide = nextSlide;
+                }, 5000);
+            }
+
+            // Infinite Marquee
+            const marqueeContent = document.querySelector('.marquee-content');
+            const brandScroller = document.querySelector('.brand-scroller');
+
+            if (marqueeContent && brandScroller) {
+                const clone = marqueeContent.cloneNode(true);
+                brandScroller.appendChild(clone);
+
+                gsap.to('.marquee-content', {
+                    xPercent: -100,
+                    repeat: -1,
+                    duration: 40,
+                    ease: "linear"
+                });
+            }
+
+            // Horizontal Scroll (Editorial)
+            const hScrollContainer = document.querySelector('.horizontal-scroll-container');
+            if (hScrollContainer) {
+                let horizontalScroll = gsap.to(hScrollContainer, {
+                    x: () => -(hScrollContainer.scrollWidth - window.innerWidth),
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: "#editorial",
+                        pin: true,
+                        scrub: 1,
+                        end: () => "+=" + (hScrollContainer.scrollWidth - window.innerWidth),
+                        invalidateOnRefresh: true
+                    }
+                });
+            }
+
+            // Zoom Parallax Section
+            let zoomTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".zoom-section",
+                    start: "top top",
+                    end: "+=2000",
+                    scrub: true,
+                    pin: true
+                }
+            });
+
+            zoomTl.to(".zoom-image-container img", {
+                scale: 1.5,
+                opacity: 0.2,
+                ease: "none"
+            })
+                .to(".zoom-text", {
+                    scale: 2,
+                    opacity: 0,
+                    ease: "power2.in"
+                }, "<")
+                .to(".zoom-card", {
+                    opacity: 1,
+                    y: -100,
+                    stagger: 0.1,
+                    rotate: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                }, "-=0.5");
+
+            // Footer Parallax
+            gsap.from("footer h2", {
+                yPercent: -50,
+                opacity: 0,
+                scrollTrigger: {
+                    trigger: "footer",
+                    start: "top bottom",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+        });
+        // 5. PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>
